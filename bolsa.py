@@ -4,12 +4,11 @@ import heapq
 # Sempre manter yfinance atualizado
 
 # Define os ativos e as proporções
-ativos = ["HGLG11.SA", "HGRE11.SA", "HGFF11.SA", "HGPO11.SA", "WEGE3.SA", "PETR4.SA", "ITUB4.SA", "VALE3.SA"]
-
-proporcoes = [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125]
+ativos = ["HGLG11.SA", "HGRE11.SA", "HGFF11.SA", "HGPO11.SA", "WEGE3.SA", "PETR4.SA", "ITUB4.SA", "VALE3.SA", "AAPL", "MSFT"]
+proporcoes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 # Quantidade de ações de cada tipo
-quantidades = [2, 2, 1, 3, 10, 6, 3, 8]
+quantidades = [2, 2, 1, 3, 10, 6, 3, 8, 0.25, 0.15]
 quantidades1 = quantidades.copy()
 
 # Pede o patrimônio atual e o valor do aporte
@@ -18,12 +17,19 @@ valor_aporte = float(input("Digite o valor do aporte: "))
 valor_aporte2 = valor_aporte
 
 # Obtém as cotações atuais dos ativos
+stock = yf.Ticker("USDBRL=X")
+dolar = stock.history(period='1d')['Close'][0]
+
 current_prices = []
 for ticker in ativos:
     stock = yf.Ticker(ticker)
     current_price = stock.history(period='1d')['Close'][0]
+    if ".SA" not in ticker:
+        current_price *= dolar
     current_prices.append(current_price)
-    
+print(current_prices)
+sleep(8)
+
 # Calcula o patrimônio atual da carteira
 patrimonio_carteira = [q * p for q, p in zip(quantidades, current_prices)]
 
@@ -39,7 +45,6 @@ else:
 
     # Calcula quanto falta investir em cada ativo
     faltas = [novo_patrimonio[i] - current_prices[i] * quantidades[i] for i in range(len(ativos))]
-    sleep(2)
 
     i = 2
     # Enquanto ainda houver valor disponível para investir e a carteira estiver desbalanceada
@@ -52,28 +57,32 @@ else:
         index_menor_patrimonio = [current_prices[i] * quantidades[i] for i in range(len(ativos))].index(menor_patrimonio)
         quantidade_a_comprar = (faltas[index_menor_patrimonio] / current_prices[index_menor_patrimonio])
 
-        if quantidade_a_comprar <= 0.5:
+        if quantidade_a_comprar <= 0.5 and ".SA" in ativos[index_menor_patrimonio]:
             quantidade_a_comprar = 1
-        else:
+        elif quantidade_a_comprar > 0.5 and ".SA" in ativos[index_menor_patrimonio]:
             quantidade_a_comprar = round(faltas[index_menor_patrimonio] / current_prices[index_menor_patrimonio])
+        else:
+            # 4 pois pode comprar fração de ação nos Eua com até 4 casas decimais
+            quantidade_a_comprar = round(faltas[index_menor_patrimonio] / current_prices[index_menor_patrimonio],4)
 
         cotacao_menor_patrimonio = current_prices[index_menor_patrimonio]
 
         # Caso o programa mande comprar x cotas de um ativo para rebalancear, mas o valor restante do aporte só permite a compra de x - 1
         if valor_aporte < quantidade_a_comprar * cotacao_menor_patrimonio:
-            print("O aporte restante não permite comprar",quantidade_a_comprar,"cotas desse ativo, haverá uma diminuição de cotas até poder comprar!")
-            sleep(3)
-            while valor_aporte < quantidade_a_comprar * cotacao_menor_patrimonio:
+            print(f"O aporte restante não permite comprar {quantidade_a_comprar} cotas de {ativos[index_menor_patrimonio]}, haverá uma diminuição de cotas até poder comprar!")
+            while valor_aporte < quantidade_a_comprar * cotacao_menor_patrimonio or quantidade_a_comprar == 0:
                 # Se mandar comprar 1 cota e depois verificar que não tenho dinheiro nem para uma, vai diminuir para 0
                 quantidade_a_comprar -= 1
-                if quantidade_a_comprar == 0:
+                if quantidade_a_comprar <= 0: #Só de entrar nesse if, já não tenho mais dinheiro para comprar
                     proximo_menor_patrimonio = heapq.nsmallest(i, menor_patrimonio1)[-1]
                     index_menor_patrimonio = menor_patrimonio1.index(proximo_menor_patrimonio)
                     quantidade_a_comprar = round(faltas[index_menor_patrimonio] / current_prices[index_menor_patrimonio]) 
                     cotacao_menor_patrimonio = current_prices[index_menor_patrimonio]
+                    if cotacao_menor_patrimonio < valor_aporte and quantidade_a_comprar <= 0:
+                        quantidade_a_comprar = 1
                     i += 1
             # Devo verificar novamente toda vez que comprar uma ação próxima recomendada, pois pode acontecer da prioridade da mesma diminuir e outra tomar seu index
-            i = 2
+            # vou pular pra próximo índice apenas se não conseguir comprar nem uma cota
                      
         quantidades[index_menor_patrimonio] += quantidade_a_comprar
         valor_aporte -= quantidade_a_comprar * cotacao_menor_patrimonio
@@ -82,9 +91,9 @@ else:
         patrimonio_carteira = [q * p for q, p in zip(quantidades, current_prices)]
         faltas = [novo_patrimonio[i] - current_prices[i] * quantidades[i] for i in range(len(ativos))]
         print("Comprar ",quantidade_a_comprar," cotas do ativo",ativos[index_menor_patrimonio])
-        i = 2 
+        i = 2
 
     # Mostra na tela as novas quantidades de ações de cada tipo
     print("\nQuantidades a comprar:\n")
     for i in range(len(ativos)):
-        print(f"Comprar",quantidades[i] - quantidades1[i],"",ativos[i])
+        print(r"Comprar",quantidades[i] - quantidades1[i],"",ativos[i])
