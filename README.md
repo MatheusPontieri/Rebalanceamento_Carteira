@@ -1,5 +1,5 @@
 # 📊 Rebalanceamento de carteira
-O rebalanceamento automático de uma carteira de ativos brasileiros e dos Estados Unidos pode ser facilitado por meio de um programa em Python.
+Programa em Python que faz o rebalanceamento automático de uma carteira de ativos brasileiros e dos Estados Unidos.
 
 ## 🔄 Utilidade
 Ao realizar aportes, é necessário efetuar diversos cálculos, como o patrimônio ideal, identificar o ativo com menor patrimônio, calcular a diferença e dividir pelo valor atual da cota. Este programa automatiza esse processo, simplificando a vida do usuário durante os aportes.
